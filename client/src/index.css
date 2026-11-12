@@ -5,15 +5,27 @@
 @layer base {
   body {
     @apply bg-slate-950 text-slate-800 antialiased;
+    font-family: 'Noto Sans Arabic', 'Segoe UI', Tahoma, system-ui, sans-serif;
   }
 }
 
+.font-ui {
+  font-family: 'Noto Sans Arabic', 'Segoe UI', Tahoma, system-ui, sans-serif;
+}
+
 .font-urdu {
-  font-family: 'Noto Nastaliq Urdu', 'Gulzar', 'Jameel Noori Nastaleeq', serif;
+  font-family: 'Noto Nastaliq Urdu', 'Noto Sans Arabic', 'Gulzar', serif;
+  line-height: 1.9;
 }
 
 .font-brand {
   font-family: 'Gulzar', 'Noto Nastaliq Urdu', serif;
+  line-height: 1.4;
+}
+
+/* Ensure no text clipping inside Urdu inputs or boxes */
+input, select, textarea {
+  font-family: 'Noto Sans Arabic', 'Segoe UI', Tahoma, sans-serif !important;
 }
 
 /* Force exact background colors and graphics when printing */
@@ -62,7 +74,6 @@
     page-break-inside: avoid;
   }
 
-  /* Ensure all receipt card children are fully visible */
   #printable-receipt > * {
     overflow: visible !important;
     page-break-inside: avoid;

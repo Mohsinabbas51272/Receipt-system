@@ -7,8 +7,8 @@ import { getReceipts, createReceipt, updateReceipt, deleteReceipt } from './serv
 import { Edit3, Eye } from 'lucide-react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('create'); // 'create' or 'history'
-  const [mobileView, setMobileView] = useState('form'); // 'form' or 'preview' on small screens
+  const [activeTab, setActiveTab] = useState('create');
+  const [mobileView, setMobileView] = useState('form');
   const [receipts, setReceipts] = useState([]);
   const [currentReceipt, setCurrentReceipt] = useState(null);
   const [selectedReceipt, setSelectedReceipt] = useState(null);
@@ -88,7 +88,6 @@ export default function App() {
       setSelectedReceipt(saved);
       showNotification('✅ پرچی گوگل شیٹ میں کامیابی سے محفوظ ہو گئی!');
       setActiveTab('create');
-      // On mobile, show the live preview after saving so user can view/print
       setMobileView('preview');
     } catch (err) {
       console.error('Error saving receipt:', err);
@@ -137,7 +136,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col font-sans">
+    <div className="min-h-screen bg-slate-950 flex flex-col font-ui text-slate-100">
       <Header
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -145,7 +144,7 @@ export default function App() {
       />
 
       {notification && (
-        <div className="no-print bg-amber-500 text-slate-950 text-center py-2 px-3 text-xs sm:text-sm font-bold shadow-md transition-all font-urdu">
+        <div className="no-print bg-amber-500 text-slate-950 text-center py-2 px-3 text-xs sm:text-sm font-bold shadow-md transition-all font-ui" dir="rtl">
           {notification}
         </div>
       )}
@@ -160,28 +159,28 @@ export default function App() {
         ) : (
           <div>
             {/* Mobile View Toggle (Visible only on mobile/tablet < lg) */}
-            <div className="lg:hidden no-print mb-3 bg-slate-800 p-1 rounded-2xl flex items-center border border-slate-700 shadow-sm">
+            <div className="lg:hidden no-print mb-3 bg-slate-900 p-1 rounded-2xl flex items-center border border-slate-800 shadow-sm" dir="rtl">
               <button
                 onClick={() => setMobileView('form')}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold font-urdu transition-all ${
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold font-ui transition-all ${
                   mobileView === 'form'
                     ? 'bg-amber-500 text-slate-950 shadow-md'
                     : 'text-slate-300 hover:text-white'
                 }`}
               >
                 <Edit3 className="w-3.5 h-3.5" />
-                <span>فارم بھریں (Form)</span>
+                <span>فارم بھریں</span>
               </button>
               <button
                 onClick={() => setMobileView('preview')}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold font-urdu transition-all ${
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold font-ui transition-all ${
                   mobileView === 'preview'
                     ? 'bg-amber-500 text-slate-950 shadow-md'
                     : 'text-slate-300 hover:text-white'
                 }`}
               >
                 <Eye className="w-3.5 h-3.5" />
-                <span>پرچی کا نظارہ (Preview &amp; Print)</span>
+                <span>پرچی دیکھیں اور پرنٹ کریں</span>
               </button>
             </div>
 
@@ -201,11 +200,14 @@ export default function App() {
 
               {/* Live Receipt Preview Section */}
               <div className={`lg:col-span-6 lg:sticky lg:top-6 ${mobileView === 'preview' ? 'block' : 'hidden lg:block'}`}>
-                <div className="no-print mb-2.5 flex items-center justify-between text-white px-1">
-                  <span className="text-[11px] sm:text-xs font-bold text-amber-400 uppercase tracking-wider font-urdu">
-                    پرچی کا براہ راست نظارہ (Live Receipt Preview)
-                  </span>
-                  <span className="text-[10px] sm:text-xs bg-emerald-950 text-emerald-400 border border-emerald-500/40 font-semibold px-2 py-0.5 rounded-full font-urdu">
+                <div className="no-print mb-3 flex items-center justify-between text-white px-1" dir="rtl">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+                    <span className="text-xs sm:text-sm font-bold text-amber-300 font-ui">
+                      پرچی کا لائیو نظارہ
+                    </span>
+                  </div>
+                  <span className="text-[11px] bg-emerald-950 text-emerald-400 border border-emerald-500/50 font-bold px-2.5 py-0.5 rounded-full font-ui" dir="rtl">
                     پرنٹ کے لیے تیار
                   </span>
                 </div>

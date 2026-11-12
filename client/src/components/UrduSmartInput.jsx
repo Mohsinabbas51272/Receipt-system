@@ -77,7 +77,6 @@ export default function UrduSmartInput({
     onChange(newVal);
     setShowSuggestions(false);
 
-    // Keep focus
     setTimeout(() => {
       if (inputRef.current) {
         inputRef.current.focus();
@@ -86,7 +85,6 @@ export default function UrduSmartInput({
   };
 
   const handleKeyDown = (e) => {
-    // 1. Navigation through suggestions dropdown
     if (showSuggestions && suggestions.length > 0) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
@@ -109,7 +107,6 @@ export default function UrduSmartInput({
       }
     }
 
-    // 2. Transliterate on Spacebar or Enter
     if (e.key === ' ' || e.key === 'Enter') {
       const lastInfo = getLastWordInfo(value);
       if (lastInfo.word && lastInfo.isEnglish) {
@@ -138,20 +135,20 @@ export default function UrduSmartInput({
           disabled={disabled}
           required={required}
           dir="rtl"
-          className={`w-full px-3 py-2 border border-slate-300 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 rounded-xl text-sm font-urdu outline-none transition-all shadow-xs bg-white text-slate-900 ${className}`}
+          className={`w-full px-3.5 py-2.5 border border-slate-300 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 rounded-xl text-base sm:text-sm font-ui outline-none transition-all shadow-xs bg-white text-slate-900 leading-normal ${className}`}
         />
       </div>
 
-      {/* Floating Word Suggestion Dropdown (Only Suggestions) */}
+      {/* Floating Word Suggestion Dropdown */}
       {showSuggestions && suggestions.length > 0 && (
-        <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white rounded-xl shadow-2xl border border-amber-300 overflow-hidden font-urdu animate-in fade-in-50 max-w-full">
-          <div className="bg-gradient-to-r from-amber-50 to-yellow-50 px-3 py-1.5 text-[10px] sm:text-[11px] text-amber-950 font-bold border-b border-amber-200 flex items-center justify-between">
+        <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white rounded-xl shadow-2xl border border-amber-300 overflow-hidden font-ui animate-in fade-in-50 max-w-full">
+          <div className="bg-gradient-to-r from-amber-50 to-yellow-50 px-3 py-2 text-xs text-amber-950 font-bold border-b border-amber-200 flex items-center justify-between" dir="rtl">
             <span className="flex items-center gap-1.5 truncate">
               <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" />
               <span className="truncate">تجویز کردہ الفاظ (کلک کریں یا Space دبائیں):</span>
             </span>
-            <span className="text-[10px] bg-amber-200/70 text-amber-950 font-mono font-bold px-1.5 py-0.5 rounded shrink-0">
-              اردو
+            <span className="text-[10px] bg-amber-200/80 text-amber-950 font-mono font-bold px-1.5 py-0.5 rounded shrink-0" dir="ltr">
+              EN ➔ اردو
             </span>
           </div>
 
@@ -170,12 +167,12 @@ export default function UrduSmartInput({
                 }`}
               >
                 {/* Roman transliteration hint */}
-                <span className="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                <span className="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200" dir="ltr">
                   {item.roman}
                 </span>
 
                 {/* Urdu suggested word */}
-                <span className="text-base font-bold text-slate-950 text-right font-urdu">
+                <span className="text-base font-bold text-slate-950 text-right font-ui">
                   {item.urdu}
                 </span>
               </div>
