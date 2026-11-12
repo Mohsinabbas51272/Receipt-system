@@ -20,7 +20,7 @@ export default function UrduSmartInput({
   const inputRef = useRef(null);
   const containerRef = useRef(null);
 
-  // Close suggestions on outside click
+  // Close suggestions on outside click/touch
   useEffect(() => {
     function handleClickOutside(e) {
       if (containerRef.current && !containerRef.current.contains(e.target)) {
@@ -28,12 +28,15 @@ export default function UrduSmartInput({
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
   }, []);
 
   // Extract last word currently being typed
   const getLastWordInfo = (text) => {
-    // Delimiters: space, comma, plus
     const match = text.match(/([a-zA-Z0-9_\u0600-\u06FF]+)$/);
     if (match) {
       return {
@@ -111,7 +114,6 @@ export default function UrduSmartInput({
       const lastInfo = getLastWordInfo(value);
       if (lastInfo.word && lastInfo.isEnglish) {
         e.preventDefault();
-        // Check top suggestion or phonetic fallback
         const topMatch = suggestions.length > 0 ? suggestions[0].urdu : phoneticTransliterateWord(lastInfo.word);
         if (topMatch) {
           const prefix = value.substring(0, lastInfo.index);
@@ -136,20 +138,20 @@ export default function UrduSmartInput({
           disabled={disabled}
           required={required}
           dir="rtl"
-          className={`w-full px-3 py-2 border border-slate-300 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 rounded-xl text-sm font-urdu outline-none transition-all shadow-sm bg-white ${className}`}
+          className={`w-full px-3 py-2 border border-slate-300 focus:border-amber-500 focus:ring-2 focus:ring-amber-200 rounded-xl text-sm font-urdu outline-none transition-all shadow-xs bg-white text-slate-900 ${className}`}
         />
       </div>
 
       {/* Floating Word Suggestion Dropdown (Only Suggestions) */}
       {showSuggestions && suggestions.length > 0 && (
-        <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white rounded-xl shadow-2xl border border-amber-300 overflow-hidden font-urdu animate-in fade-in-50">
-          <div className="bg-gradient-to-r from-amber-50 to-yellow-50 px-3 py-1.5 text-[11px] text-amber-950 font-bold border-b border-amber-200 flex items-center justify-between">
-            <span className="flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-              <span>تجویز کردہ الفاظ (منتخب کرنے کے لیے کلک کریں یا Space دبائیں):</span>
+        <div className="absolute left-0 right-0 top-full mt-1.5 z-50 bg-white rounded-xl shadow-2xl border border-amber-300 overflow-hidden font-urdu animate-in fade-in-50 max-w-full">
+          <div className="bg-gradient-to-r from-amber-50 to-yellow-50 px-3 py-1.5 text-[10px] sm:text-[11px] text-amber-950 font-bold border-b border-amber-200 flex items-center justify-between">
+            <span className="flex items-center gap-1.5 truncate">
+              <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <span className="truncate">تجویز کردہ الفاظ (کلک کریں یا Space دبائیں):</span>
             </span>
-            <span className="text-[10px] bg-amber-200/70 text-amber-950 font-mono font-bold px-1.5 py-0.5 rounded">
-              EN ➔ اردو
+            <span className="text-[10px] bg-amber-200/70 text-amber-950 font-mono font-bold px-1.5 py-0.5 rounded shrink-0">
+              اردو
             </span>
           </div>
 
@@ -157,11 +159,11 @@ export default function UrduSmartInput({
             {suggestions.map((item, idx) => (
               <div
                 key={idx}
-                onMouseDown={(e) => {
+                onPointerDown={(e) => {
                   e.preventDefault();
                   applyUrduWord(item.urdu);
                 }}
-                className={`flex items-center justify-between px-3.5 py-2 cursor-pointer transition-colors ${
+                className={`flex items-center justify-between px-3.5 py-2.5 cursor-pointer transition-colors active:bg-amber-200 ${
                   idx === selectedIndex
                     ? 'bg-amber-100 text-amber-950 font-bold'
                     : 'hover:bg-amber-50/60 text-slate-800'

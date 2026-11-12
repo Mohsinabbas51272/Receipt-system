@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Save, Scale, RotateCcw, Sparkles, Languages } from 'lucide-react';
+import { Plus, Trash2, Save, Scale, RotateCcw, Sparkles, Languages, Eye } from 'lucide-react';
 import { TOLA_IN_GRAMS, gramsToTolaMashaRati, tolaMashaRatiToString } from '../utils/goldUnits';
 import UrduSmartInput from './UrduSmartInput';
 
@@ -8,6 +8,7 @@ const QUICK_ITEM_TAGS = ['انگوٹھی', 'کنٹھی', 'ہار', 'بالیاں
 export default function ReceiptForm({
   onSave,
   onLiveUpdate,
+  onViewPreview,
   currentReceiptNumber = '',
   initialData = null,
   resetTrigger = 0
@@ -16,7 +17,7 @@ export default function ReceiptForm({
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [customer, setCustomer] = useState({ name: '', phone: '' });
   const [goldRate, setGoldRate] = useState(0);
-  const [goldRateInput, setGoldRateInput] = useState(''); // separate string for input display
+  const [goldRateInput, setGoldRateInput] = useState('');
   const [goldKarat, setGoldKarat] = useState('');
   const [items, setItems] = useState([]);
   const [palashWeight, setPalashWeight] = useState('');
@@ -51,7 +52,6 @@ export default function ReceiptForm({
       setItems(loadedItems);
       setAdvanceAmount(advance);
 
-      // Also push to preview immediately so rate shows on receipt
       if (onLiveUpdate) {
         const itWeight = loadedItems.reduce((s, it) => s + (parseFloat(it.weight) || 0), 0);
         const totWeight = itWeight + (parseFloat(palash) || 0);
@@ -82,7 +82,6 @@ export default function ReceiptForm({
     setGoldKarat('');
     setPalashWeight('');
     
-    // Default initial line (completely empty)
     const initialItems = [
       {
         id: Date.now(),
@@ -110,15 +109,10 @@ export default function ReceiptForm({
   // Calculations
   const itemsWeightGrams = items.reduce((sum, item) => sum + (parseFloat(item.weight) || 0), 0);
   const palashWeightNum = parseFloat(palashWeight) || 0;
-  // Total weight = Items Weight + Palash Weight
   const totalWeightGrams = itemsWeightGrams + palashWeightNum;
-
-  // Grand Total Price = (Total Weight / 11.6638) * Gold Rate
   const grandTotal = Math.round((totalWeightGrams / TOLA_IN_GRAMS) * (parseFloat(goldRate) || 0));
   const balanceDue = Math.max(0, grandTotal - (parseFloat(advanceAmount) || 0));
 
-  // Tola Masha Rati strings
-  const itemsTMR = gramsToTolaMashaRati(itemsWeightGrams);
   const totalTMR = gramsToTolaMashaRati(totalWeightGrams);
 
   // Emit live update to preview
@@ -162,14 +156,12 @@ export default function ReceiptForm({
   };
 
   const handleRateChange = (rawStr) => {
-    // Store the raw string so user can type freely (e.g. "275" mid-typing)
     setGoldRateInput(rawStr);
     if (rawStr.trim() === '') {
       setGoldRate(0);
       emitUpdate({ goldRate: 0 });
       return;
     }
-    // Only update the actual numeric rate when there's a valid number
     const parsed = parseFloat(rawStr);
     if (!isNaN(parsed) && parsed >= 0) {
       setGoldRate(parsed);
@@ -262,16 +254,16 @@ export default function ReceiptForm({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* 1. Header Information */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
-        <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-100">
+      <div className="bg-white rounded-2xl p-3.5 sm:p-5 shadow-xs border border-slate-200">
+        <div className="flex flex-wrap justify-between items-center mb-3 pb-2.5 border-b border-slate-100 gap-2">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-            <h3 className="text-sm font-bold text-slate-800 font-urdu">
+            <h3 className="text-sm sm:text-base font-bold text-slate-800 font-urdu">
               رسید کی بنیادی معلومات
             </h3>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               type="button"
               onClick={() => resetToBlank()}
@@ -282,8 +274,8 @@ export default function ReceiptForm({
               <span>خالی فارم</span>
             </button>
 
-            <div className="flex items-center gap-1.5 ml-1">
-              <label className="text-xs font-bold text-slate-600 font-urdu">پرچی نمبر:</label>
+            <div className="flex items-center gap-1.5">
+              <label className="text-xs font-bold text-slate-600 font-urdu whitespace-nowrap">پرچی نمبر:</label>
               <input
                 type="text"
                 placeholder="---"
@@ -292,30 +284,31 @@ export default function ReceiptForm({
                   setReceiptNumber(e.target.value);
                   emitUpdate({ receiptNumber: e.target.value });
                 }}
-                className="w-16 px-2 py-0.5 text-center font-mono font-black text-amber-900 bg-amber-50 border border-amber-300 rounded-lg text-sm"
+                className="w-16 px-2 py-1 text-center font-mono font-black text-amber-900 bg-amber-50 border border-amber-300 rounded-lg text-sm"
               />
             </div>
           </div>
         </div>
 
         {/* Helpful Transliteration Tip */}
-        <div className="mb-3 text-[11px] font-urdu text-amber-950 bg-amber-50/90 border border-amber-200 rounded-xl px-3 py-1.5 flex items-center justify-between flex-wrap gap-2 shadow-xs">
-          <div className="flex items-center gap-1.5">
-            <Languages className="w-4 h-4 text-amber-600 shrink-0" />
-            <span><strong>ورڈ سجیشن اور آٹو ٹرانسلیٹ:</strong> نام یا زیور انگریزی میں ٹائپ کریں (مثلاً: <code className="font-mono font-bold bg-white px-1 py-0.2 rounded border border-amber-300 text-amber-800">angothi</code>, <code className="font-mono font-bold bg-white px-1 py-0.2 rounded border border-amber-300 text-amber-800">har</code>, <code className="font-mono font-bold bg-white px-1 py-0.2 rounded border border-amber-300 text-amber-800">ali</code>) تو تجاویز آ جائیں گی، لفظ منتخب کرنے کے لیے کلک کریں یا Space دبائیں!</span>
-          </div>
+        <div className="mb-3 text-[11px] font-urdu text-amber-950 bg-amber-50/90 border border-amber-200 rounded-xl px-3 py-2 flex items-start gap-2 shadow-2xs leading-relaxed">
+          <Languages className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+          <span>
+            <strong>ورڈ سجیشن:</strong> نام یا زیور انگریزی میں لکھیں (مثلاً <code className="font-mono font-bold bg-white px-1 rounded border border-amber-300 text-amber-800">angothi</code>, <code className="font-mono font-bold bg-white px-1 rounded border border-amber-300 text-amber-800">ali</code>) تو اردو تجاویز آ جائیں گی، لفظ منتخب کرنے کے لیے کلک کریں یا Space دبائیں!
+          </span>
         </div>
 
+        {/* 4 Fields Grid: Responsive for mobile (1 col) to desktop (4 cols) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Customer Name with UrduSmartInput */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1 font-urdu">
+            <label className="block text-xs font-semibold text-slate-700 mb-1 font-urdu" dir="rtl">
               گاہک کا نام (Customer Name) *
             </label>
             <UrduSmartInput
               type="name"
               required
-              placeholder="مثلاً: محمد احمد خان (یا انگلش: ali, ahmed, khan)"
+              placeholder="مثلاً: محمد احمد خان (یا ali, khan)"
               value={customer.name}
               onChange={(val) => {
                 const updated = { ...customer, name: val };
@@ -327,7 +320,7 @@ export default function ReceiptForm({
 
           {/* Contact Number */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1 font-urdu">
+            <label className="block text-xs font-semibold text-slate-700 mb-1 font-urdu" dir="rtl">
               رابطہ نمبر (Contact Number)
             </label>
             <input
@@ -339,13 +332,13 @@ export default function ReceiptForm({
                 setCustomer(updated);
                 emitUpdate({ customer: updated });
               }}
-              className="w-full px-3 py-1.5 border border-slate-300 rounded-xl text-sm font-mono focus:ring-2 focus:ring-amber-500 outline-none"
+              className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-mono focus:ring-2 focus:ring-amber-500 outline-none text-slate-900 bg-white"
             />
           </div>
 
           {/* Date */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1 font-urdu">
+            <label className="block text-xs font-semibold text-slate-700 mb-1 font-urdu" dir="rtl">
               تاریخ (Date)
             </label>
             <input
@@ -355,13 +348,13 @@ export default function ReceiptForm({
                 setDate(e.target.value);
                 emitUpdate({ date: e.target.value });
               }}
-              className="w-full px-3 py-1.5 border border-slate-300 rounded-xl text-sm font-mono focus:ring-2 focus:ring-amber-500 outline-none"
+              className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-mono focus:ring-2 focus:ring-amber-500 outline-none text-slate-900 bg-white"
             />
           </div>
 
           {/* Gold Karat */}
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1 font-urdu">
+            <label className="block text-xs font-semibold text-slate-700 mb-1 font-urdu" dir="rtl">
               کیریٹ سونا (Gold Karat)
             </label>
             <select
@@ -370,7 +363,7 @@ export default function ReceiptForm({
                 setGoldKarat(e.target.value);
                 emitUpdate({ goldKarat: e.target.value });
               }}
-              className="w-full px-3 py-1.5 border border-slate-300 rounded-xl text-sm font-bold text-amber-800 bg-amber-50/50"
+              className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm font-bold text-amber-900 bg-amber-50/50 outline-none"
             >
               <option value="">-- منتخب کریں --</option>
               <option value="24K">24K (خالص پکہ سونا)</option>
@@ -381,15 +374,15 @@ export default function ReceiptForm({
           </div>
         </div>
 
-        {/* Gold Rate Row */}
-        <div className="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 bg-amber-50/50 p-2.5 rounded-xl border border-amber-200/60">
+        {/* Gold Rate Row: Responsive wrapping */}
+        <div className="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2.5 bg-amber-50/60 p-2.5 sm:p-3 rounded-xl border border-amber-200/60">
           <div className="flex items-center gap-2">
-            <Scale className="w-4 h-4 text-amber-600" />
+            <Scale className="w-4 h-4 text-amber-600 shrink-0" />
             <span className="text-xs font-bold text-slate-800 font-urdu">
               سونا ریٹ فی تولہ (Gold Rate per Tola):
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
             <span className="text-xs text-slate-500 font-bold font-mono">Rs</span>
             <input
               type="text"
@@ -398,7 +391,6 @@ export default function ReceiptForm({
               value={goldRateInput}
               onChange={(e) => handleRateChange(e.target.value)}
               onBlur={(e) => {
-                // On blur: if field left empty or invalid
                 if (e.target.value.trim() === '') {
                   setGoldRate(0);
                   setGoldRateInput('');
@@ -410,18 +402,18 @@ export default function ReceiptForm({
                   }
                 }
               }}
-              className="w-36 px-2.5 py-1 border border-amber-300 rounded-lg text-sm font-mono font-bold text-amber-900 bg-white focus:ring-2 focus:ring-amber-400 outline-none"
+              className="w-36 sm:w-40 px-3 py-1.5 border border-amber-300 rounded-lg text-sm font-mono font-bold text-amber-900 bg-white focus:ring-2 focus:ring-amber-400 outline-none"
             />
           </div>
         </div>
       </div>
 
       {/* 2. Simplified Jewellery Items: Name & Weight */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
-        <div className="flex justify-between items-center mb-3">
+      <div className="bg-white rounded-2xl p-3.5 sm:p-5 shadow-xs border border-slate-200">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
           <div>
-            <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2 font-urdu">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+            <h3 className="text-sm sm:text-base font-bold text-slate-800 flex items-center gap-2 font-urdu">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0"></span>
               زیورات کی تفصیل و وزن (آئٹم کا نام اور وزن)
             </h3>
             <p className="text-[11px] text-slate-500 font-urdu mt-0.5">
@@ -432,9 +424,10 @@ export default function ReceiptForm({
           <button
             type="button"
             onClick={addItemLine}
-            className="flex items-center gap-1 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm transition-all font-urdu"
+            className="w-full sm:w-auto flex items-center justify-center gap-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold px-3.5 py-2 rounded-xl shadow-xs transition-all font-urdu active:scale-95"
           >
-            <Plus className="w-3.5 h-3.5" /> نئی لائن شامل کریں
+            <Plus className="w-4 h-4 shrink-0" />
+            <span>نئی لائن شامل کریں</span>
           </button>
         </div>
 
@@ -445,11 +438,11 @@ export default function ReceiptForm({
             return (
               <div
                 key={item.id || index}
-                className="p-3 rounded-xl border border-slate-200 bg-slate-50/60 hover:border-amber-400 transition-colors"
+                className="p-3 sm:p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:border-amber-400 transition-colors"
               >
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center">
-                  {/* Item Description with Numbering FIRST */}
-                  <div className="md:col-span-7">
+                <div className="flex flex-col md:grid md:grid-cols-12 gap-3 items-start md:items-center">
+                  {/* Item Description with Numbering */}
+                  <div className="w-full md:col-span-7">
                     <div className="flex items-center justify-between mb-1">
                       <label className="text-[11px] font-semibold text-slate-700 font-urdu flex items-center gap-1.5" dir="rtl">
                         <span className="bg-amber-100 text-amber-950 font-bold px-1.5 py-0.5 rounded text-[11px] font-mono">
@@ -463,18 +456,18 @@ export default function ReceiptForm({
                       required
                       value={item.description}
                       onChange={(val) => handleDescriptionChange(index, val)}
-                      placeholder="انگوٹھی + کنٹھی + ہار (یا انگلش: angothi, har, bali)"
+                      placeholder="انگوٹھی + کنٹھی + ہار (یا angothi, har)"
                     />
 
                     {/* Quick helper buttons to append items */}
                     <div className="flex items-center gap-1 flex-wrap mt-1.5">
-                      <span className="text-[10px] text-slate-400 font-urdu">شامل کریں:</span>
+                      <span className="text-[10px] text-slate-400 font-urdu shrink-0">شامل کریں:</span>
                       {QUICK_ITEM_TAGS.map((tag, tIdx) => (
                         <button
                           key={tIdx}
                           type="button"
                           onClick={() => appendTagToItem(index, tag)}
-                          className="text-[10px] font-urdu bg-white hover:bg-amber-100 hover:text-amber-900 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200 transition-colors"
+                          className="text-[10px] font-urdu bg-white hover:bg-amber-100 hover:text-amber-900 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200 transition-colors active:scale-95"
                         >
                           + {tag}
                         </button>
@@ -482,33 +475,33 @@ export default function ReceiptForm({
                     </div>
                   </div>
 
-                  {/* Weight in Grams */}
-                  <div className="md:col-span-4">
-                    <label className="block text-[11px] font-semibold text-slate-700 mb-1 font-urdu">
-                      وزن گرام
-                    </label>
-                    <input
-                      type="number"
-                      step="0.001"
-                      required
-                      placeholder="0.000"
-                      value={item.weight || ''}
-                      onChange={(e) => handleWeightChange(index, e.target.value)}
-                      className="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm bg-white font-mono font-bold text-slate-900 focus:ring-1 focus:ring-amber-500 outline-none"
-                    />
-                    <div className="text-[10px] font-mono text-amber-800 mt-1">
-                      {tolaMashaRatiToString(tmr)}
+                  {/* Weight in Grams & Delete Button */}
+                  <div className="w-full md:col-span-5 flex items-end gap-2 pt-1 md:pt-0">
+                    <div className="flex-1">
+                      <label className="block text-[11px] font-semibold text-slate-700 mb-1 font-urdu" dir="rtl">
+                        وزن گرام (Weight in Grams) *
+                      </label>
+                      <input
+                        type="number"
+                        step="0.001"
+                        required
+                        placeholder="0.000"
+                        value={item.weight || ''}
+                        onChange={(e) => handleWeightChange(index, e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-300 rounded-xl text-sm bg-white font-mono font-bold text-slate-900 focus:ring-1 focus:ring-amber-500 outline-none"
+                      />
+                      <div className="text-[10px] font-mono text-amber-800 mt-1">
+                        {tolaMashaRatiToString(tmr)}
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Delete Button */}
-                  <div className="md:col-span-1 text-right pt-2 md:pt-0">
+                    {/* Delete Button */}
                     <button
                       type="button"
                       onClick={() => removeItemLine(index)}
                       disabled={items.length === 1}
                       title="لائن ڈیلیٹ کریں"
-                      className="p-2 text-slate-400 hover:text-rose-600 disabled:opacity-20 transition-colors rounded-lg hover:bg-rose-50"
+                      className="p-2.5 text-slate-400 hover:text-rose-600 disabled:opacity-20 transition-colors rounded-xl hover:bg-rose-50 border border-slate-200 shrink-0 mb-4 md:mb-0 active:scale-95"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -519,14 +512,12 @@ export default function ReceiptForm({
           })}
         </div>
 
-        {/* ========================================================
-            3. DEDICATED PALASH / POLISH WEIGHT ROW (Separate Line)
-            ======================================================== */}
-        <div className="mt-4 pt-3 border-t border-slate-200 bg-amber-50/70 p-3.5 rounded-xl border border-amber-200/80">
-          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+        {/* 3. DEDICATED PALASH / POLISH WEIGHT ROW */}
+        <div className="mt-4 pt-3 border-t border-slate-200 bg-amber-50/70 p-3 sm:p-3.5 rounded-xl border border-amber-200/80">
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 sm:gap-3 items-center">
             <div className="sm:col-span-7">
-              <label className="text-xs font-bold text-amber-950 font-urdu flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-amber-600" />
+              <label className="text-xs font-bold text-amber-950 font-urdu flex items-center gap-1.5" dir="rtl">
+                <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
                 <span>پالش کا وزن</span>
               </label>
               <p className="text-[11px] text-amber-800/80 font-urdu mt-0.5">
@@ -542,47 +533,45 @@ export default function ReceiptForm({
                   placeholder="پالش وزن (مثلاً: 0.250)"
                   value={palashWeight}
                   onChange={(e) => handlePalashChange(e.target.value)}
-                  className="w-full px-3 py-1.5 border border-amber-300 rounded-lg text-sm font-mono font-bold text-amber-950 bg-white focus:ring-1 focus:ring-amber-500 outline-none"
+                  className="w-full px-3 py-2 border border-amber-300 rounded-xl text-sm font-mono font-bold text-amber-950 bg-white focus:ring-1 focus:ring-amber-500 outline-none"
                 />
               </div>
-              <span className="text-xs font-bold text-amber-900 font-urdu">گرام</span>
+              <span className="text-xs font-bold text-amber-900 font-urdu shrink-0">گرام</span>
             </div>
           </div>
         </div>
 
-        {/* ========================================================
-            4. TOTAL WEIGHT, TOTAL PRICE, JAMAH RAKAM & BAQAYA
-            ======================================================== */}
+        {/* 4. TOTAL WEIGHT, TOTAL PRICE, JAMAH RAKAM & BAQAYA */}
         <div className="mt-4 space-y-2.5">
           {/* Line 1: Total Weight with Palash */}
-          <div className="p-3 rounded-xl bg-slate-900 text-white flex justify-between items-center">
-            <div className="flex items-center gap-2 text-sm font-mono">
+          <div className="p-3 rounded-xl bg-slate-900 text-white flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1.5">
+            <div className="flex items-center gap-2 text-xs sm:text-sm font-mono flex-wrap">
               <span className="text-white font-black">{totalWeightGrams.toFixed(3)}g</span>
               <span className="text-amber-300 font-bold">({tolaMashaRatiToString(totalTMR)})</span>
               {palashWeightNum > 0 && (
-                <span className="text-slate-400 text-xs hidden sm:inline">
+                <span className="text-slate-400 text-[11px]">
                   (آئٹمز: {itemsWeightGrams.toFixed(3)}g + پالش: {palashWeightNum.toFixed(3)}g)
                 </span>
               )}
             </div>
-            <div className="text-xs font-urdu font-bold text-amber-400">
+            <div className="text-xs font-urdu font-bold text-amber-400 self-end sm:self-auto">
               {palashWeightNum > 0 ? 'کل وزن بمعہ پالش' : 'کل وزن'}
             </div>
           </div>
 
-          {/* Line 2 (Next Line): Total Calculated Price */}
-          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/40 text-amber-900 flex justify-between items-center">
-            <div className="text-xl font-mono font-black text-amber-950">
+          {/* Line 2: Total Calculated Price */}
+          <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/40 text-amber-900 flex justify-between items-center gap-2">
+            <div className="text-lg sm:text-xl font-mono font-black text-amber-950">
               Rs {Math.round(grandTotal).toLocaleString()}
             </div>
-            <div className="text-xs font-urdu font-black text-amber-950">
+            <div className="text-xs sm:text-sm font-urdu font-black text-amber-950">
               کل قیمت
             </div>
           </div>
 
-          {/* Line 3 (Next Line): Jamah Rakam Input */}
-          <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-300 flex justify-between items-center gap-3">
-            <div className="w-48">
+          {/* Line 3: Jamah Rakam Input */}
+          <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-300 flex justify-between items-center gap-2">
+            <div className="w-32 xs:w-40 sm:w-48 max-w-[60%]">
               <input
                 type="number"
                 placeholder="0"
@@ -592,30 +581,41 @@ export default function ReceiptForm({
                   setAdvanceAmount(val);
                   emitUpdate({ advanceAmount: val });
                 }}
-                className="w-full px-3 py-1.5 bg-white border border-emerald-400 rounded-lg text-base font-mono font-black text-emerald-900 focus:ring-2 focus:ring-emerald-500 outline-none"
+                className="w-full px-3 py-1.5 bg-white border border-emerald-400 rounded-lg text-sm sm:text-base font-mono font-black text-emerald-900 focus:ring-2 focus:ring-emerald-500 outline-none"
               />
             </div>
-            <label className="text-xs font-urdu font-bold text-emerald-950">
+            <label className="text-xs sm:text-sm font-urdu font-bold text-emerald-950 whitespace-nowrap">
               جمع رقم
             </label>
           </div>
 
           {/* Line 4: Bold Line and Baqaya */}
-          <div className="p-3.5 rounded-xl bg-rose-50 border-2 border-slate-900 text-slate-950 flex justify-between items-center shadow-sm">
-            <div className="text-2xl font-mono font-black text-rose-800">
+          <div className="p-3 sm:p-3.5 rounded-xl bg-rose-50 border-2 border-slate-900 text-slate-950 flex justify-between items-center gap-2 shadow-xs">
+            <div className="text-xl sm:text-2xl font-mono font-black text-rose-800">
               Rs {Math.round(balanceDue).toLocaleString()}
             </div>
-            <div className="text-sm font-urdu font-black text-slate-950">
+            <div className="text-sm font-urdu font-black text-slate-950 whitespace-nowrap">
               بقایا
             </div>
           </div>
         </div>
 
-        {/* Submit Button */}
-        <div className="mt-4 pt-3 border-t border-slate-100 flex justify-end">
+        {/* Action Buttons: Save & Quick View on Mobile */}
+        <div className="mt-4 pt-3 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2.5">
+          {onViewPreview && (
+            <button
+              type="button"
+              onClick={onViewPreview}
+              className="lg:hidden flex items-center justify-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-2.5 px-4 rounded-xl border border-slate-300 text-xs font-urdu transition-colors"
+            >
+              <Eye className="w-4 h-4 text-amber-600" />
+              <span>پرچی کا نظارہ دیکھیں (Preview)</span>
+            </button>
+          )}
+
           <button
             type="submit"
-            className="flex items-center gap-2 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-600 hover:to-amber-600 text-slate-950 font-black py-2.5 px-7 rounded-xl shadow-md hover:shadow-lg transition-all text-xs uppercase tracking-wider font-urdu"
+            className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-600 hover:to-amber-600 text-slate-950 font-black py-2.5 px-7 rounded-xl shadow-md hover:shadow-lg transition-all text-xs sm:text-sm uppercase tracking-wider font-urdu active:scale-95"
           >
             <Save className="w-4 h-4 text-slate-950" />
             <span>رسید محفوظ کریں</span>

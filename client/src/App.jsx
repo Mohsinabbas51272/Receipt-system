@@ -4,9 +4,11 @@ import ReceiptForm from './components/ReceiptForm';
 import ReceiptPreview from './components/ReceiptPreview';
 import ReceiptList from './components/ReceiptList';
 import { getReceipts, createReceipt, updateReceipt, deleteReceipt } from './services/api';
+import { Edit3, Eye } from 'lucide-react';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('create'); // 'create' or 'history'
+  const [mobileView, setMobileView] = useState('form'); // 'form' or 'preview' on small screens
   const [receipts, setReceipts] = useState([]);
   const [currentReceipt, setCurrentReceipt] = useState(null);
   const [selectedReceipt, setSelectedReceipt] = useState(null);
@@ -14,10 +16,9 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState('');
 
-  // Fetch receipts from PostgreSQL backend on mount
+  // Fetch receipts from backend on mount
   useEffect(() => {
     fetchReceipts();
-    // Start with a completely blank receipt on launch!
     initBlankReceipt();
   }, []);
 
@@ -38,16 +39,6 @@ export default function App() {
   const showNotification = (msg) => {
     setNotification(msg);
     setTimeout(() => setNotification(''), 4000);
-  };
-
-  // Compute next receipt number
-  const computeNextReceiptNumber = (list = receipts) => {
-    if (!list || list.length === 0) return '';
-    const nums = list
-      .map(r => parseInt(r.receiptNumber))
-      .filter(n => !isNaN(n));
-    if (nums.length === 0) return '';
-    return `${Math.max(...nums) + 1}`;
   };
 
   // Initialize a completely blank receipt
@@ -71,10 +62,11 @@ export default function App() {
     initBlankReceipt('');
     setFormResetTrigger(prev => prev + 1);
     setActiveTab('create');
+    setMobileView('form');
     showNotification('✨ نئی خالی پرچی تیار ہے!');
   };
 
-  // Save or update receipt in PostgreSQL database
+  // Save or update receipt
   const handleSaveReceipt = async (receiptData) => {
     try {
       setLoading(true);
@@ -94,8 +86,10 @@ export default function App() {
       });
       setCurrentReceipt(saved);
       setSelectedReceipt(saved);
-      showNotification('✅ پرچی ڈیٹابیس میں کامیابی کے ساتھ محفوظ ہو گئی!');
+      showNotification('✅ پرچی گوگل شیٹ میں کامیابی سے محفوظ ہو گئی!');
       setActiveTab('create');
+      // On mobile, show the live preview after saving so user can view/print
+      setMobileView('preview');
     } catch (err) {
       console.error('Error saving receipt:', err);
       const errMsg = err.response?.data?.error || err.response?.data?.message || err.message;
@@ -105,9 +99,8 @@ export default function App() {
     }
   };
 
-  // Delete receipt from PostgreSQL database
+  // Delete receipt
   const handleDeleteReceipt = async (targetReceipt) => {
-    // Always use numeric DB id for deletion — never receipt_number to avoid bulk deletes
     const id = targetReceipt?.id;
     try {
       if (id) {
@@ -117,7 +110,6 @@ export default function App() {
       console.warn('Delete API warning:', err.message);
     }
 
-    // Remove ONLY by unique numeric DB id from local state
     const updated = receipts.filter(r => r.id !== targetReceipt.id);
     setReceipts(updated);
 
@@ -133,6 +125,7 @@ export default function App() {
     setSelectedReceipt(rcp);
     setFormResetTrigger(prev => prev + 1);
     setActiveTab('create');
+    setMobileView('preview');
   };
 
   // Live update preview as user types in form
@@ -152,12 +145,12 @@ export default function App() {
       />
 
       {notification && (
-        <div className="no-print bg-amber-500 text-slate-950 text-center py-2 px-4 text-sm font-bold shadow-md transition-all font-urdu">
+        <div className="no-print bg-amber-500 text-slate-950 text-center py-2 px-3 text-xs sm:text-sm font-bold shadow-md transition-all font-urdu">
           {notification}
         </div>
       )}
 
-      <main className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto p-2.5 sm:p-5 lg:p-8">
         {activeTab === 'history' ? (
           <ReceiptList
             receipts={receipts}
@@ -165,29 +158,59 @@ export default function App() {
             onDeleteReceipt={handleDeleteReceipt}
           />
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            {/* Form Section */}
-            <div className="lg:col-span-6 no-print">
-              <ReceiptForm
-                onSave={handleSaveReceipt}
-                onLiveUpdate={handleLiveUpdate}
-                currentReceiptNumber={selectedReceipt ? selectedReceipt.receiptNumber : ''}
-                initialData={selectedReceipt}
-                resetTrigger={formResetTrigger}
-              />
+          <div>
+            {/* Mobile View Toggle (Visible only on mobile/tablet < lg) */}
+            <div className="lg:hidden no-print mb-3 bg-slate-800 p-1 rounded-2xl flex items-center border border-slate-700 shadow-sm">
+              <button
+                onClick={() => setMobileView('form')}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold font-urdu transition-all ${
+                  mobileView === 'form'
+                    ? 'bg-amber-500 text-slate-950 shadow-md'
+                    : 'text-slate-300 hover:text-white'
+                }`}
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>فارم بھریں (Form)</span>
+              </button>
+              <button
+                onClick={() => setMobileView('preview')}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold font-urdu transition-all ${
+                  mobileView === 'preview'
+                    ? 'bg-amber-500 text-slate-950 shadow-md'
+                    : 'text-slate-300 hover:text-white'
+                }`}
+              >
+                <Eye className="w-3.5 h-3.5" />
+                <span>پرچی کا نظارہ (Preview &amp; Print)</span>
+              </button>
             </div>
 
-            {/* Live Receipt Preview Section (Exact Pad) */}
-            <div className="lg:col-span-6 sticky top-6">
-              <div className="no-print mb-3 flex items-center justify-between text-white">
-                <span className="text-xs font-bold text-amber-400 uppercase tracking-wider font-urdu">
-                  پرچی کا براہ راست نظارہ (Live Receipt Preview)
-                </span>
-                <span className="text-xs bg-emerald-950 text-emerald-400 border border-emerald-500/40 font-semibold px-2.5 py-0.5 rounded-full font-urdu">
-                  پرنٹ کے لیے تیار
-                </span>
+            {/* Desktop: 2 Columns Side-by-Side | Mobile: Controlled by mobileView */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+              {/* Form Section */}
+              <div className={`lg:col-span-6 no-print ${mobileView === 'form' ? 'block' : 'hidden lg:block'}`}>
+                <ReceiptForm
+                  onSave={handleSaveReceipt}
+                  onLiveUpdate={handleLiveUpdate}
+                  onViewPreview={() => setMobileView('preview')}
+                  currentReceiptNumber={selectedReceipt ? selectedReceipt.receiptNumber : ''}
+                  initialData={selectedReceipt}
+                  resetTrigger={formResetTrigger}
+                />
               </div>
-              <ReceiptPreview receipt={currentReceipt} />
+
+              {/* Live Receipt Preview Section */}
+              <div className={`lg:col-span-6 lg:sticky lg:top-6 ${mobileView === 'preview' ? 'block' : 'hidden lg:block'}`}>
+                <div className="no-print mb-2.5 flex items-center justify-between text-white px-1">
+                  <span className="text-[11px] sm:text-xs font-bold text-amber-400 uppercase tracking-wider font-urdu">
+                    پرچی کا براہ راست نظارہ (Live Receipt Preview)
+                  </span>
+                  <span className="text-[10px] sm:text-xs bg-emerald-950 text-emerald-400 border border-emerald-500/40 font-semibold px-2 py-0.5 rounded-full font-urdu">
+                    پرنٹ کے لیے تیار
+                  </span>
+                </div>
+                <ReceiptPreview receipt={currentReceipt} />
+              </div>
             </div>
           </div>
         )}
